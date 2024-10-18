@@ -60,3 +60,24 @@ class GridGraph:
         # Draw the graph
         nx.draw(self.graph, pos, with_labels=True, node_size=500, node_color="lightblue", font_size=10)
         plt.show()
+
+    def plot_graph_with_agents(self, agent_list):
+        """
+        Plots the grid graph with agent positions marked in red.
+
+        Parameters:
+        - grid_graph: GridGraph object
+        - agents: list of Agent objects
+        """
+        # Define the node positions in a grid layout
+        pos = {i * self.m + j: (j, -i) for i in range(self.n) for j in range(self.m)}
+
+        # Get the positions of the agents
+        agent_positions = [agent.getPosition() for agent in agent_list]
+
+        # Prepare node colors (red for nodes with agents, lightblue for others)
+        node_colors = ['red' if node in agent_positions else 'lightblue' for node in self.graph.nodes()]
+
+        # Plot the graph
+        nx.draw(self.graph, pos, with_labels=True, node_size=500, node_color=node_colors, font_size=10)
+        plt.show()
