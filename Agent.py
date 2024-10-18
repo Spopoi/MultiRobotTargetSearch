@@ -37,3 +37,10 @@ class Agent:
 
     def getInformationStateTrajectory(self):
         return self.information_state_k
+
+    def getNeighbors(self, _agents):
+        neighbors = []
+        for a in _agents:
+            if a != self and a.getPosition() == self.node_position:
+                neighbors.append(a)
+        return neighbors
