@@ -37,3 +37,32 @@ class DTMC_Utils:
             if s - 1 > 0.00000001:
                 raise RuntimeError(
                     "The matrix is not well defined. Goes over 1 in the row " + str(i) + " with a value " + str(s))
+
+    @staticmethod
+    def __cumulativeTransformer(p0: np.array) -> np.array:
+        """
+        Given a probability array this function will compute the cumulative of such distribution.
+        """
+        p = np.zeros(len(p0), dtype=float)
+        p[0] = p0[0]
+
+        for i in range(1, len(p)):
+            p[i] = p0[i] + p[i - 1]
+
+        return p
+
+    @staticmethod
+    def obtainState(p0: np.array) -> int:
+        """
+        Given a probability distribution of the state this function will
+        produce a weighted random state.
+        """
+        p = DTMC_Utils.__cumulativeTransformer(p0)
+
+        random_state = np.random.uniform()
+        s = 0
+        for i in range(len(p0)):
+            if (random_state < p[i]) and ((p[i] - p[i - 1]) > 0.0000001):
+                s = i
+                break
+        return s
