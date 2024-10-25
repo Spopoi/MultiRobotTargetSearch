@@ -1,6 +1,6 @@
 import time
 import numpy as np
-from DTMC_Utils import DTMC_Utils as Utils
+from Utils.DTMC_Utils import DTMC_Utils as Utils
 
 
 class MultiRobotTargetSearch:
