@@ -36,6 +36,9 @@ class GridGraph:
 
         return G
 
+    def getNodesNumber(self):
+        return self.n * self.m
+
     def _create_node_positions(self):
         """Private method to create a dictionary of node positions (i, j)."""
         positions = {}
