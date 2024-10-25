@@ -1,5 +1,6 @@
 import time
 import numpy as np
+
 from Utils.DTMC_Utils import DTMC_Utils as Utils
 
 
@@ -16,6 +17,8 @@ class MultiRobotTargetSearch:
         self.Zr = _Zr
         self.S = self.graph.getNodesNumber()
         self.P = Utils.build_transition_matrix(self.graph, self.S)
+        self.execution_time = 0
+        self.iterations = 0
 
     def run(self):
         timer = 0
@@ -29,12 +32,22 @@ class MultiRobotTargetSearch:
             self.update_agents_information_state(new_information_state_vector[:-1, :])
 
             timer += 1
-
-        print(f"Finished. Information State Vector: {self.build_augmented_information_state_vector()}")
+        self.iterations = timer
+        # print(f"Finished. Information State Vector: {self.build_augmented_information_state_vector()}")
         end_time = time.time()
-        execution_time = end_time - start_time
-        print(f"{timer} iterazioni in {execution_time} secondi")
+        self.execution_time = end_time - start_time
+        # print(f"{timer} iterazioni in {self.execution_time} secondi")
 
+    def plot(self):
+        self.graph.plot_graph_with_agents(self.agents)
+
+    def getIterationNumber(self):
+        return self.iterations
+
+    def getInformationStateVector(self):
+        return self.build_augmented_information_state_vector()
+
+    def writeAgentTrajectories(self):
         file_name = "trajectories.txt"
         with open(file_name, 'w') as file:
             stringa = ""
@@ -44,22 +57,8 @@ class MultiRobotTargetSearch:
                     f" {np.array(agent.getInformationStateTrajectory()).__str__()} \n\n")
             file.write(stringa)
 
-            # for _agent in self.agents:
-            #     sum1 = 0
-            #     sum2 = 0
-            #     N_ka = getNeighbors(_agent, agents)
-            #     for b in N_ka:
-            #         None # formula
-            #     if _agent.getPosition() in Z_r:
-            #         sum2 = -(_agent.getInformationState() - reference_information_state)
-            #
-            #     information_state_k = _agent.getInformationState()
-            #     _agent.updateInformationState(information_state_k + sum1 + sum2)
-            #     print(build_graph_laplacian(self.agents))
-            #     self.k += 1 # time
-
-    def plot(self):
-        self.graph.plot_graph_with_agents(self.agents)
+    def getExecutionTime(self):
+        return self.execution_time
 
     def check_consensus(self):
         for ag in self.agents:
