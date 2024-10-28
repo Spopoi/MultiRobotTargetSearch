@@ -17,25 +17,33 @@ class MultiRobotTargetSearch:
         self.Zr = _Zr
         self.S = self.graph.getNodesNumber()
         self.P = Utils.build_transition_matrix(self.graph, self.S)
-        self.execution_time = 0
+        # self.execution_time = 0
         self.iterations = 0
+        # self.consensus_time = np.zeros(self.N)
+        self.consensus_time = np.full(self.N, np.nan)
 
     def run(self):
-        timer = 0
-        start_time = time.time()
+        # timer = 1
+        # start_time = time.time()
         while not self.check_consensus():
+            # self.plot()
+
             H_k = self.build_transition_information_states_matrix()
             actual_information_state_vector = self.build_augmented_information_state_vector()
+            # print(f"{self.k}: information state \n {actual_information_state_vector}")
 
             new_information_state_vector = np.matmul(H_k, actual_information_state_vector)
             self.update_agents_position()
             self.update_agents_information_state(new_information_state_vector[:-1, :])
 
-            timer += 1
-        self.iterations = timer
+            self.k += 1
+            # timer += 1
+        # self.iterations = timer
+        self.iterations = self.k
+        # print("last iteration: ", self.iterations)
         # print(f"Finished. Information State Vector: {self.build_augmented_information_state_vector()}")
-        end_time = time.time()
-        self.execution_time = end_time - start_time
+        # end_time = time.time()
+        # self.execution_time = end_time - start_time
         # print(f"{timer} iterazioni in {self.execution_time} secondi")
 
     def plot(self):
@@ -43,6 +51,10 @@ class MultiRobotTargetSearch:
 
     def getIterationNumber(self):
         return self.iterations
+
+    def getMeanConsensusTime(self):
+        # print("mean consensus time: ", np.mean(self.consensus_time))
+        return np.mean(self.consensus_time)
 
     def getInformationStateVector(self):
         return self.build_augmented_information_state_vector()
@@ -57,19 +69,32 @@ class MultiRobotTargetSearch:
                     f" {np.array(agent.getInformationStateTrajectory()).__str__()} \n\n")
             file.write(stringa)
 
-    def getExecutionTime(self):
-        return self.execution_time
+    # def getExecutionTime(self):
+    #     return self.execution_time
 
     def check_consensus(self):
+        # for ag in self.agents:
+        #     agent_index = ag.getID()-1
+        #     if abs(ag.getInformationState() - self.reference_information_state) > self.eps:
+        #         return False  # at least one agent doesn't reach the reference state
+        #     elif np.isnan(self.consensus_time[agent_index]):
+        #         self.consensus_time[agent_index] = self.k
+        # return True
+        check = True
         for ag in self.agents:
+            agent_index = ag.getID()-1
             if abs(ag.getInformationState() - self.reference_information_state) > self.eps:
-                return False  # at least one agent doesn't reach the reference state
-        return True
+                check = False  # at least one agent doesn't reach the reference state
+            elif np.isnan(self.consensus_time[agent_index]):
+                # print(f"update agent {agent_index} at time {self.k}")
+                self.consensus_time[agent_index] = self.k
+        return check
 
     def update_agents_position(self):
         for agent in self.agents:
             actual_state = agent.getPosition()
             new_state = Utils.obtainState(self.P[actual_state].A1)
+            # print(f"agent {agent.id_number} from {actual_state} -> {new_state}")
             agent.updatePosition(new_state)
 
     def update_agents_information_state(self, new_information_state):
@@ -89,17 +114,29 @@ class MultiRobotTargetSearch:
 
     def build_graph_laplacian(self):
         matrix = np.zeros((self.N, self.N))
-        for ii in range(self.N):
-            matrix[ii][ii] = len(self.agents[ii].getNeighbors(self.agents))
-        for j in range(self.N):
-            for l in range(self.N):
-                if j != l:
-                    if self.agents[j].getPosition() == self.agents[l].getPosition():
-                        matrix[j][l] = -1
-                    else:
-                        matrix[j][l] = 0
-        # print("Laplacian: ", matrix)
+        for actor in self.agents:
+            position = actor.getPosition()
+            id = actor.getID()
+
+            neighbors = actor.getNeighbors(self.agents)
+            matrix[id-1][id-1] = len(neighbors)
+
+            for neighbor in neighbors:
+                if position == neighbor.getPosition():
+                    matrix[id-1][neighbor.getID()-1] = -1
+        # print("Laplacian: \n", matrix)
         return matrix
+        # for ii in range(self.N):
+        #     matrix[ii][ii] = len(self.agents[ii].getNeighbors(self.agents))
+        # for j in range(self.N):
+        #     for l in range(self.N):
+        #         if j != l:
+        #             if self.agents[j].getPosition() == self.agents[l].getPosition():
+        #                 matrix[j][l] = -1
+        #             else:
+        #                 matrix[j][l] = 0
+        # # print("Laplacian: ", matrix)
+        # return matrix
 
     def build_transition_information_states_matrix(self):
         L = self.build_graph_laplacian()
@@ -114,7 +151,7 @@ class MultiRobotTargetSearch:
                 d.append(0)
 
         # print("d = ", d)
-        # element_11 = I - alpha*L - np.diag(d)
+        # element_11 = I - alpha*L + np.diag(d)
         element_11 = I - self.alpha * L - np.diag(d)
         # element_12 = [-x for x in d]
         element_12 = [x for x in d]
@@ -128,3 +165,4 @@ class MultiRobotTargetSearch:
 
         # print("H = ", H)
         return H
+

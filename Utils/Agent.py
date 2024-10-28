@@ -18,6 +18,9 @@ class Agent:
     def __eq__(self, other):
         return self.id_number == other.id_number
 
+    def getID(self):
+        return self.id_number
+
     def getPosition(self):
         return self.node_position
 
