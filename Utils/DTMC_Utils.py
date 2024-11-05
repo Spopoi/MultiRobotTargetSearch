@@ -9,9 +9,11 @@ class DTMC_Utils:
         t_m = np.matrix(np.zeros([S, S]))  # Usa np.matrix per creare una matrice
         edges = graph.edges()
         for row in range(S):
+            p_ij = 1 / len([edge for edge in edges if edge[0] == row or edge[1] == row])
+            t_m[row, row] = p_ij
             for col in range(S):
                 if row != col and (row, col) in edges:
-                    t_m[row, col] = 1 / len([edge for edge in edges if edge[0] == row or edge[1] == row])
+                    t_m[row, col] = p_ij
         DTMC_Utils.defined_check(t_m)
         return t_m
 

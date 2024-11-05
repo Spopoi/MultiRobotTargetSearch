@@ -1,5 +1,6 @@
 import time
 import numpy as np
+from matplotlib import pyplot as plt
 
 from Utils.DTMC_Utils import DTMC_Utils as Utils
 
@@ -28,13 +29,14 @@ class MultiRobotTargetSearch:
         while not self.check_consensus():
             # self.plot()
 
-            H_k = self.build_transition_information_states_matrix()
-            actual_information_state_vector = self.build_augmented_information_state_vector()
+            # H_k = self.build_transition_information_states_matrix()
+            # actual_information_state_vector = self.build_augmented_information_state_vector()
             # print(f"{self.k}: information state \n {actual_information_state_vector}")
 
-            new_information_state_vector = np.matmul(H_k, actual_information_state_vector)
+            # new_information_state_vector = np.matmul(H_k, actual_information_state_vector)
+            self.update_agents_state()
             self.update_agents_position()
-            self.update_agents_information_state(new_information_state_vector[:-1, :])
+            # self.update_agents_information_state(new_information_state_vector[:-1, :])
 
             self.k += 1
             # timer += 1
@@ -82,7 +84,7 @@ class MultiRobotTargetSearch:
         # return True
         check = True
         for ag in self.agents:
-            agent_index = ag.getID()-1
+            agent_index = ag.getID() - 1
             if abs(ag.getInformationState() - self.reference_information_state) > self.eps:
                 check = False  # at least one agent doesn't reach the reference state
             elif np.isnan(self.consensus_time[agent_index]):
@@ -97,9 +99,34 @@ class MultiRobotTargetSearch:
             # print(f"agent {agent.id_number} from {actual_state} -> {new_state}")
             agent.updatePosition(new_state)
 
+    def update_agents_state(self):
+        actual_information_vector = self.getInformationStateVector()
+        new_information_vector = []
+        for (i, agent) in enumerate(self.agents):
+            sum1 = 0
+            sum2 = 0
+            # neighbors = agent.getNeighbors(self.agents)
+            neighbors = agent.getNeighborsContiguousNodes(self.agents, self.graph)
+            # if len(neighbors) > 0:
+            #     print(f"Iteration {self.k} Agent {agent.getID()} neighbors: \n {neighbors}")
+            #     self.plot()
+            agent_information_state = actual_information_vector[i]
+            for neighbor in neighbors:
+                # sum1 += self.alpha * abs(agent_information_state - neighbor.getInformationState())
+                sum1 -= self.alpha * (agent_information_state - neighbor.getInformationState())
+                # print(f"Exchange information from agent {agent.getID()} to {neighbor.getID()}")
+            if agent.getPosition() in self.Zr:
+                sum2 = -(agent_information_state - self.reference_information_state)
+                # print(f"agent {agent.getID()} finds the feature")
+            # agent.updateInformationState(agent_information_state + sum1 + sum2)
+            # print(f"sum1 = {sum1}, sum2 = {sum2}, total sum = {agent_information_state + sum1 + sum2}")
+            new_information_vector.append(agent_information_state + sum1 + sum2)
+        self.update_agents_information_state(new_information_vector)
+        # print(f"old state: {actual_information_vector} \n new state: {new_information_vector}")
+
     def update_agents_information_state(self, new_information_state):
         for (i, information_state) in enumerate(new_information_state):
-            # print(f"(i, information_state) = ({i},{information_state})")
+            # print(f"(i, information_state) = ({i},{information_state[0]})")
             self.agents[i].updateInformationState(information_state[0])
             # self.agents[i].updateInformationState(max(information_state[0],0))
 
@@ -112,6 +139,29 @@ class MultiRobotTargetSearch:
         # print("information vector: ", column_vector)
         return column_vector
 
+    def plot_agents_information_state_trajectories(self):
+        agents_information_state_trajectories = [
+            agent.getInformationStateTrajectory() for agent in self.agents
+        ] if self.agents else []
+
+        num_instants = len(agents_information_state_trajectories[0])
+
+        x_values = range(num_instants)
+
+        plt.figure(figsize=(10, 6))
+
+        for i, trajectory in enumerate(agents_information_state_trajectories):
+            plt.step(x_values, trajectory, label=f'Agente {i + 1}', where='post')
+
+        plt.title("Traiettorie degli stati di informazione per ogni agente")
+        plt.xlabel("Istanti temporali (k)")
+        plt.ylabel("Stato di informazione")
+
+        plt.legend()
+        plt.grid(True)
+
+        plt.show()
+
     def build_graph_laplacian(self):
         matrix = np.zeros((self.N, self.N))
         for actor in self.agents:
@@ -119,11 +169,11 @@ class MultiRobotTargetSearch:
             id = actor.getID()
 
             neighbors = actor.getNeighbors(self.agents)
-            matrix[id-1][id-1] = len(neighbors)
+            matrix[id - 1][id - 1] = len(neighbors)
 
             for neighbor in neighbors:
                 if position == neighbor.getPosition():
-                    matrix[id-1][neighbor.getID()-1] = -1
+                    matrix[id - 1][neighbor.getID() - 1] = -1
         # print("Laplacian: \n", matrix)
         return matrix
         # for ii in range(self.N):
@@ -165,4 +215,3 @@ class MultiRobotTargetSearch:
 
         # print("H = ", H)
         return H
-

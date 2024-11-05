@@ -47,3 +47,21 @@ class Agent:
             if a != self and a.getPosition() == self.node_position:
                 neighbors.append(a)
         return neighbors
+
+    def getNeighborsContiguousNodes(self, _agents, graph):
+        neighbors = []
+        agent_position = self.node_position
+        agent_edges = [edge for edge in graph.edges() if edge[0] == agent_position or edge[1] == agent_position]
+
+        for a in _agents:
+            if a != self:
+                other_agent_position = a.getPosition()
+                if (
+                        other_agent_position == agent_position
+                        or (other_agent_position, agent_position) in agent_edges
+                        or (agent_position, other_agent_position) in agent_edges
+                ):
+                    neighbors.append(a)
+        # print(f"Agent {a.getID()} neighbors: \n {neighbors}")
+        return neighbors
+

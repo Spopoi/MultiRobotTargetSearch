@@ -19,6 +19,7 @@ class GridGraph:
             for j in range(self.m):
                 node = i * self.m + j
                 G.add_node(node)
+                G.add_edge(node, node)
 
                 # Connect to neighbors: above, below, left, right
                 if i > 0:  # Above
