@@ -7,7 +7,7 @@ from Utils.DTMC_Utils import DTMC_Utils as Utils
 
 class MultiRobotTargetSearch:
 
-    def __init__(self, _agents, _graph, _reference_information_state, _Zr, _alpha):
+    def __init__(self, _agents, _graph, _reference_information_state, _Zr, _alpha, same_node_communication=True):
         self.eps = 0.01
         self.agents = _agents
         self.graph = _graph
@@ -17,18 +17,20 @@ class MultiRobotTargetSearch:
         self.alpha = _alpha
         self.Zr = _Zr
         self.S = self.graph.getNodesNumber()
-        self.P = Utils.build_transition_matrix(self.graph, self.S)
+        self.P = Utils.build_equal_probability_transition_matrix(self.graph, self.S)
+        # self.P = Utils.build_preferred_direction_transition_matrix(self.graph, self.S)
         # self.execution_time = 0
         self.iterations = 0
         # self.consensus_time = np.zeros(self.N)
         self.consensus_time = np.full(self.N, np.nan)
+        self.same_node_communication = same_node_communication
 
     def run(self):
         # timer = 1
         # start_time = time.time()
         while not self.check_consensus():
             # self.plot()
-
+            # print(self.k)
             # H_k = self.build_transition_information_states_matrix()
             # actual_information_state_vector = self.build_augmented_information_state_vector()
             # print(f"{self.k}: information state \n {actual_information_state_vector}")
@@ -99,30 +101,50 @@ class MultiRobotTargetSearch:
             # print(f"agent {agent.id_number} from {actual_state} -> {new_state}")
             agent.updatePosition(new_state)
 
+    # def update_agents_state(self):
+    #     actual_information_vector = self.getInformationStateVector()
+    #     new_information_vector = []
+    #     for (i, agent) in enumerate(self.agents):
+    #         sum1 = 0
+    #         sum2 = 0
+    #         # neighbors = agent.getNeighbors(self.agents)
+    #         neighbors = agent.getNeighborsContiguousNodes(self.agents, self.graph)
+    #         agent_information_state = actual_information_vector[i]
+    #         for neighbor in neighbors:
+    #             # sum1 += self.alpha * abs(agent_information_state - neighbor.getInformationState())
+    #             sum1 -= self.alpha * (agent_information_state - neighbor.getInformationState())
+    #             # print(f"Exchange information from agent {agent.getID()} to {neighbor.getID()}")
+    #         if agent.getPosition() in self.Zr:
+    #             sum2 = -(agent_information_state - self.reference_information_state)
+    #             # print(f"agent {agent.getID()} finds the feature")
+    #         # agent.updateInformationState(agent_information_state + sum1 + sum2)
+    #         # print(f"sum1 = {sum1}, sum2 = {sum2}, total sum = {agent_information_state + sum1 + sum2}")
+    #         new_information_vector.append(agent_information_state + sum1 + sum2)
+    #     self.update_agents_information_state(new_information_vector)
+    #     # print(f"old state: {actual_information_vector} \n new state: {new_information_vector}")
+
     def update_agents_state(self):
         actual_information_vector = self.getInformationStateVector()
         new_information_vector = []
         for (i, agent) in enumerate(self.agents):
             sum1 = 0
             sum2 = 0
-            # neighbors = agent.getNeighbors(self.agents)
-            neighbors = agent.getNeighborsContiguousNodes(self.agents, self.graph)
-            # if len(neighbors) > 0:
-            #     print(f"Iteration {self.k} Agent {agent.getID()} neighbors: \n {neighbors}")
-            #     self.plot()
+            if self.same_node_communication:
+                neighbors = agent.getNeighbors(self.agents)
+            else:
+                neighbors = agent.getNeighborsContiguousNodes(self.agents)
+
+            # neighbors = agent.getNeighborsContiguousNodes(self.agents, self.graph)
             agent_information_state = actual_information_vector[i]
+
             for neighbor in neighbors:
-                # sum1 += self.alpha * abs(agent_information_state - neighbor.getInformationState())
-                sum1 -= self.alpha * (agent_information_state - neighbor.getInformationState())
-                # print(f"Exchange information from agent {agent.getID()} to {neighbor.getID()}")
+                sum1 += self.alpha * np.maximum(0, neighbor.getInformationState() - agent_information_state)
+
             if agent.getPosition() in self.Zr:
                 sum2 = -(agent_information_state - self.reference_information_state)
-                # print(f"agent {agent.getID()} finds the feature")
-            # agent.updateInformationState(agent_information_state + sum1 + sum2)
-            # print(f"sum1 = {sum1}, sum2 = {sum2}, total sum = {agent_information_state + sum1 + sum2}")
+
             new_information_vector.append(agent_information_state + sum1 + sum2)
         self.update_agents_information_state(new_information_vector)
-        # print(f"old state: {actual_information_vector} \n new state: {new_information_vector}")
 
     def update_agents_information_state(self, new_information_state):
         for (i, information_state) in enumerate(new_information_state):
@@ -162,20 +184,20 @@ class MultiRobotTargetSearch:
 
         plt.show()
 
-    def build_graph_laplacian(self):
-        matrix = np.zeros((self.N, self.N))
-        for actor in self.agents:
-            position = actor.getPosition()
-            id = actor.getID()
-
-            neighbors = actor.getNeighbors(self.agents)
-            matrix[id - 1][id - 1] = len(neighbors)
-
-            for neighbor in neighbors:
-                if position == neighbor.getPosition():
-                    matrix[id - 1][neighbor.getID() - 1] = -1
-        # print("Laplacian: \n", matrix)
-        return matrix
+    # def build_graph_laplacian(self):
+    #     matrix = np.zeros((self.N, self.N))
+    #     for actor in self.agents:
+    #         position = actor.getPosition()
+    #         id = actor.getID()
+    #
+    #         neighbors = actor.getNeighbors(self.agents)
+    #         matrix[id - 1][id - 1] = len(neighbors)
+    #
+    #         for neighbor in neighbors:
+    #             if position == neighbor.getPosition():
+    #                 matrix[id - 1][neighbor.getID() - 1] = -1
+    #     # print("Laplacian: \n", matrix)
+    #     return matrix
         # for ii in range(self.N):
         #     matrix[ii][ii] = len(self.agents[ii].getNeighbors(self.agents))
         # for j in range(self.N):
@@ -188,30 +210,30 @@ class MultiRobotTargetSearch:
         # # print("Laplacian: ", matrix)
         # return matrix
 
-    def build_transition_information_states_matrix(self):
-        L = self.build_graph_laplacian()
-        I = np.eye(self.N)
-
-        # build d -> agent who finds the target
-        d = []
-        for index in range(self.N):
-            if self.agents[index].getPosition() in self.Zr:
-                d.append(1)
-            else:
-                d.append(0)
-
-        # print("d = ", d)
-        # element_11 = I - alpha*L + np.diag(d)
-        element_11 = I - self.alpha * L - np.diag(d)
-        # element_12 = [-x for x in d]
-        element_12 = [x for x in d]
-        element_12_T = np.array(element_12).reshape(-1, 1)
-        element_21 = np.zeros((1, self.N))
-        element_22 = np.array([[1]])
-
-        H = np.block([
-            [element_11, element_12_T], [element_21, element_22]
-        ])
-
-        # print("H = ", H)
-        return H
+    # def build_transition_information_states_matrix(self):
+    #     L = self.build_graph_laplacian()
+    #     I = np.eye(self.N)
+    #
+    #     # build d -> agent who finds the target
+    #     d = []
+    #     for index in range(self.N):
+    #         if self.agents[index].getPosition() in self.Zr:
+    #             d.append(1)
+    #         else:
+    #             d.append(0)
+    #
+    #     # print("d = ", d)
+    #     # element_11 = I - alpha*L + np.diag(d)
+    #     element_11 = I - self.alpha * L - np.diag(d)
+    #     # element_12 = [-x for x in d]
+    #     element_12 = [x for x in d]
+    #     element_12_T = np.array(element_12).reshape(-1, 1)
+    #     element_21 = np.zeros((1, self.N))
+    #     element_22 = np.array([[1]])
+    #
+    #     H = np.block([
+    #         [element_11, element_12_T], [element_21, element_22]
+    #     ])
+    #
+    #     # print("H = ", H)
+    #     return H

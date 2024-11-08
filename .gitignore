@@ -1,3 +1,4 @@
 .idea/
 trajectories.txt
 __pycache__/
+experiment_data_full.npz
