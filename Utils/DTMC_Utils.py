@@ -46,6 +46,7 @@ class DTMC_Utils:
                     t_m[row, col] = other_prob
 
         DTMC_Utils.defined_check(t_m)
+        print(t_m)
         return t_m
 
     @staticmethod
@@ -123,23 +124,65 @@ class DTMC_Utils:
     @staticmethod
     def plot_average_execution_time_comparison(agents_number_list, avg_time_list_1, std_dev_list_1, avg_time_list_2,
                                                std_dev_list_2, x_label):
+        # Configurazione del grafico
         plt.figure(figsize=(10, 6))
 
+        # Comunicazione nello stesso nodo
         plt.errorbar(
             agents_number_list, avg_time_list_1, yerr=std_dev_list_1,
-            fmt='o-', color='b', ecolor='gray', elinewidth=2, capsize=4, label='Same Node Communication'
+            fmt='o-', color='b', ecolor='b', elinewidth=2, capsize=4, label='Same Node Communication'
         )
+        # Comunicazione in nodi contigui
         plt.errorbar(
             agents_number_list, avg_time_list_2, yerr=std_dev_list_2,
-            fmt='o-', color='r', ecolor='black', elinewidth=2, capsize=4, label='Contiguous Node Communication'
+            fmt='o-', color='r', ecolor='r', elinewidth=2, capsize=4, label='Contiguous Node Communication'
         )
 
+        # Etichette e titoli
         plt.xlabel(x_label)
         plt.ylabel("Average Execution Time (iterations)")
-        plt.title("Average Execution Time Comparison between Same Node Communication and Contiguous Node Communication")
+        plt.title("Average Execution Time on a 5x5 grid over 1000 Monte Carlo Simulations:\n Comparison Between Same "
+                  "Node Communication vs Contiguous Node Communication.")
         plt.legend()
-        plt.grid(True)
+
+        # Griglia e formattazione dell'asse
+        plt.grid(True, alpha=0.3)
         plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True))
+
+        # Mostra il grafico
+        plt.tight_layout()
+        plt.show()
+
+    @staticmethod
+    def plot_separate_execution_time_comparison(agents_number_list, avg_time_list_1, std_dev_list_1, avg_time_list_2,
+                                                std_dev_list_2, x_label):
+        # Configurazione dei subplot
+        fig, axs = plt.subplots(1, 2, figsize=(14, 6),
+                                sharey=True)  # Condividiamo l'asse y per mantenere la stessa scala
+
+        # Primo subplot: Comunicazione nello stesso nodo
+        axs[0].errorbar(
+            agents_number_list, avg_time_list_1, yerr=std_dev_list_1,
+            fmt='o-', color='b', ecolor='b', elinewidth=2, capsize=4
+        )
+        axs[0].set_title("Same Node Communication")
+        axs[0].set_xlabel(x_label)
+        axs[0].set_ylabel("Average Execution Time (iterations)")
+        axs[0].grid(True, alpha=0.3)
+        axs[0].xaxis.set_major_locator(MaxNLocator(integer=True))
+
+        # Secondo subplot: Comunicazione in nodi contigui
+        axs[1].errorbar(
+            agents_number_list, avg_time_list_2, yerr=std_dev_list_2,
+            fmt='o-', color='r', ecolor='r', elinewidth=2, capsize=4
+        )
+        axs[1].set_title("Contiguous Node Communication")
+        axs[1].set_xlabel(x_label)
+        axs[1].grid(True, alpha=0.3)
+        axs[1].xaxis.set_major_locator(MaxNLocator(integer=True))
+
+        # Miglior layout
+        plt.tight_layout()
         plt.show()
 
     @staticmethod

@@ -30,7 +30,7 @@ class MultiRobotTargetSearch:
         # start_time = time.time()
         while not self.check_consensus():
             # self.plot()
-            # print(self.k)
+            # print("k= ", self.k)
             # H_k = self.build_transition_information_states_matrix()
             # actual_information_state_vector = self.build_augmented_information_state_vector()
             # print(f"{self.k}: information state \n {actual_information_state_vector}")
@@ -132,23 +132,34 @@ class MultiRobotTargetSearch:
             if self.same_node_communication:
                 neighbors = agent.getNeighbors(self.agents)
             else:
-                neighbors = agent.getNeighborsContiguousNodes(self.agents)
+                neighbors = agent.getNeighborsContiguousNodes(self.agents, self.graph)
+                # print("neighbors: ", neighbors)
 
             # neighbors = agent.getNeighborsContiguousNodes(self.agents, self.graph)
             agent_information_state = actual_information_vector[i]
 
             for neighbor in neighbors:
-                sum1 += self.alpha * np.maximum(0, neighbor.getInformationState() - agent_information_state)
+                # sum1 += self.alpha * np.maximum(0, neighbor.getInformationState() - agent_information_state)
+                sum1 += np.maximum(0, self.alpha * (neighbor.getInformationState() - agent_information_state))
 
             if agent.getPosition() in self.Zr:
                 sum2 = -(agent_information_state - self.reference_information_state)
 
-            new_information_vector.append(agent_information_state + sum1 + sum2)
+            # print(f"Agent {i}:")
+            # print(f"  Agent information state: {agent_information_state}")
+            # print(f"  Sum1: {sum1}")
+            # for neighbor in neighbors:
+            #     print(f"neighbor {neighbor.getID()}, information state: {neighbor.getInformationState()}")
+            # print(f"  Sum2: {sum2}")
+            # print(f"  New value: {agent_information_state + sum1 + sum2}")
+            # print(np.minimum(agent_information_state + sum1 + sum2, self.reference_information_state))
+
+            new_information_vector.append(min(agent_information_state + sum1 + sum2, [self.reference_information_state]))
         self.update_agents_information_state(new_information_vector)
 
     def update_agents_information_state(self, new_information_state):
         for (i, information_state) in enumerate(new_information_state):
-            # print(f"(i, information_state) = ({i},{information_state[0]})")
+            # print(f"(i, information_state) = ({i},{information_state})")
             self.agents[i].updateInformationState(information_state[0])
             # self.agents[i].updateInformationState(max(information_state[0],0))
 
