@@ -8,7 +8,7 @@ from Utils.DTMC_Utils import DTMC_Utils as Utils
 class MultiRobotTargetSearch:
 
     def __init__(self, _agents, _graph, _reference_information_state, _Zr, _alpha, _same_node_communication=True,
-                 _random_target=False, _preferred_direction=False):
+                 _random_target=False, _preferred_direction=False, _noisy_measure=False):
         self.eps = 0.01
         self.agents = _agents
         self.graph = _graph
@@ -31,6 +31,7 @@ class MultiRobotTargetSearch:
         # self.consensus_time = np.zeros(self.N)
         self.consensus_time = np.full(self.N, np.nan)
         self.same_node_communication = _same_node_communication
+        self.noisy_measure = _noisy_measure
 
     def run(self):
         # timer = 1
@@ -108,28 +109,6 @@ class MultiRobotTargetSearch:
             # print(f"agent {agent.id_number} from {actual_state} -> {new_state}")
             agent.updatePosition(new_state)
 
-    # def update_agents_state(self):
-    #     actual_information_vector = self.getInformationStateVector()
-    #     new_information_vector = []
-    #     for (i, agent) in enumerate(self.agents):
-    #         sum1 = 0
-    #         sum2 = 0
-    #         # neighbors = agent.getNeighbors(self.agents)
-    #         neighbors = agent.getNeighborsContiguousNodes(self.agents, self.graph)
-    #         agent_information_state = actual_information_vector[i]
-    #         for neighbor in neighbors:
-    #             # sum1 += self.alpha * abs(agent_information_state - neighbor.getInformationState())
-    #             sum1 -= self.alpha * (agent_information_state - neighbor.getInformationState())
-    #             # print(f"Exchange information from agent {agent.getID()} to {neighbor.getID()}")
-    #         if agent.getPosition() in self.Zr:
-    #             sum2 = -(agent_information_state - self.reference_information_state)
-    #             # print(f"agent {agent.getID()} finds the feature")
-    #         # agent.updateInformationState(agent_information_state + sum1 + sum2)
-    #         # print(f"sum1 = {sum1}, sum2 = {sum2}, total sum = {agent_information_state + sum1 + sum2}")
-    #         new_information_vector.append(agent_information_state + sum1 + sum2)
-    #     self.update_agents_information_state(new_information_vector)
-    #     # print(f"old state: {actual_information_vector} \n new state: {new_information_vector}")
-
     def update_agents_state(self):
         actual_information_vector = self.getInformationStateVector()
         new_information_vector = []
@@ -150,7 +129,11 @@ class MultiRobotTargetSearch:
                 sum1 += np.maximum(0, self.alpha * (neighbor.getInformationState() - agent_information_state))
 
             if agent.getPosition() in self.Zr:
-                sum2 = -(agent_information_state - self.reference_information_state)
+                reference_information_state = (
+                    np.random.normal(self.reference_information_state, 0.02)
+                    if self.noisy_measure else self.reference_information_state
+                )
+                sum2 = -(agent_information_state - reference_information_state)
 
             # print(f"Agent {i}:")
             # print(f"  Agent information state: {agent_information_state}")
