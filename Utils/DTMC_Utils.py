@@ -24,29 +24,44 @@ class DTMC_Utils:
 
     @staticmethod
     def build_preferred_direction_transition_matrix(graph, S, north_preference=0.5):
-        """Method to build the transition matrix with a preferred direction (e.g., higher probability to go north)"""
-        t_m = np.matrix(np.zeros([S, S]))  # Create a zero matrix
+        """
+        Metodo per costruire la matrice di transizione con una direzione preferita (ad esempio, probabilità più alta di andare a nord).
+        Usa esplicitamente np.matrix per rappresentare la matrice.
+
+        Args:
+            graph: Grafo connesso che rappresenta i nodi e i collegamenti.
+            S: Numero di stati/nodi.
+            north_preference: Probabilità preferita di muoversi verso nord.
+
+        Returns:
+            np.matrix: Matrice di transizione normalizzata.
+        """
+        t_m = np.matrix(np.zeros((S, S)))
+
         edges = graph.edges()
 
         for row in range(S):
             neighbors = [edge[1] if edge[0] == row else edge[0] for edge in edges if row in edge]
 
-            # Check if the node has neighbors
             if not neighbors:
+                t_m[row, row] = 1
                 continue
 
-            # Define the probability for preferred and other directions
-            preferred_prob = north_preference  # probability to go north
-            other_prob = (1 - north_preference) / (len(neighbors) - 1) if len(neighbors) > 1 else 0
+            num_neighbors = len(neighbors)
+
+            preferred_prob = north_preference
+            other_prob = (1 - north_preference) / (num_neighbors - 1) if num_neighbors > 1 else 0
 
             for col in neighbors:
-                if DTMC_Utils.is_north(row, col, S):  # Placeholder function to check if col is north of row
+                if DTMC_Utils.is_north(row, col, S):
                     t_m[row, col] = preferred_prob
                 else:
                     t_m[row, col] = other_prob
 
+            t_m[row, :] /= np.sum(t_m[row, :])
+
         DTMC_Utils.defined_check(t_m)
-        print(t_m)
+        # print(t_m)
         return t_m
 
     @staticmethod
@@ -56,6 +71,30 @@ class DTMC_Utils:
         # For example, if nodes are arranged in an NxN grid:
         N = int(num_of_nodes ** 0.5)  # assuming a square grid
         return col == row - N
+
+    @staticmethod
+    def is_probabilistic_transition_matrix(matrix):
+        """
+        Verifica se una matrice è una matrice di transizione probabilistica per una DTMC.
+        Args:
+            matrix (numpy.ndarray): Matrice da verificare.
+        Returns:
+            bool: True se è una matrice di transizione valida, False altrimenti.
+        """
+        # Verifica non negatività
+        if not np.all(matrix >= 0):
+            print("La matrice contiene valori negativi.")
+            return False
+
+        # Verifica che la somma di ogni riga sia 1 (entro una tolleranza)
+        row_sums = np.sum(matrix, axis=1)
+        if not np.allclose(row_sums, 1):
+            print("Le somme delle righe non sono tutte uguali a 1.")
+            print("Somme delle righe:", row_sums)
+            return False
+
+        # Se entrambe le condizioni sono soddisfatte
+        return True
 
     @staticmethod
     def initAgents(number_of_agents, number_of_nodes):

@@ -7,7 +7,8 @@ from Utils.DTMC_Utils import DTMC_Utils as Utils
 
 class MultiRobotTargetSearch:
 
-    def __init__(self, _agents, _graph, _reference_information_state, _Zr, _alpha, same_node_communication=True):
+    def __init__(self, _agents, _graph, _reference_information_state, _Zr, _alpha, _same_node_communication=True,
+                 _random_target=False, _preferred_direction=False):
         self.eps = 0.01
         self.agents = _agents
         self.graph = _graph
@@ -15,15 +16,21 @@ class MultiRobotTargetSearch:
         self.k = 0
         self.N = len(self.agents)
         self.alpha = _alpha
-        self.Zr = _Zr
         self.S = self.graph.getNodesNumber()
-        self.P = Utils.build_equal_probability_transition_matrix(self.graph, self.S)
-        # self.P = Utils.build_preferred_direction_transition_matrix(self.graph, self.S)
+        if _random_target:
+            self.set_random_target()
+        else:
+            self.Zr = _Zr
+        if _preferred_direction:
+            self.P = Utils.build_preferred_direction_transition_matrix(self.graph, self.S)
+        else:
+            self.P = Utils.build_equal_probability_transition_matrix(self.graph, self.S)
+
         # self.execution_time = 0
         self.iterations = 0
         # self.consensus_time = np.zeros(self.N)
         self.consensus_time = np.full(self.N, np.nan)
-        self.same_node_communication = same_node_communication
+        self.same_node_communication = _same_node_communication
 
     def run(self):
         # timer = 1
@@ -248,3 +255,15 @@ class MultiRobotTargetSearch:
     #
     #     # print("H = ", H)
     #     return H
+    def set_random_target(self):
+        """
+        Genera un target casuale all'interno di S e aggiorna il vettore Zr.
+        Zr[0]: nodo target
+        Zr[1], Zr[2]: nodi vicini (precedente e successivo) rispetto a target_node
+        """
+        target_node = np.random.randint(1, self.S)
+        self.Zr = np.zeros(3)
+        self.Zr[0] = target_node - 1
+        self.Zr[1] = target_node
+        self.Zr[2] = target_node + 1
+
