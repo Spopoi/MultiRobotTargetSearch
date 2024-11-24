@@ -23,7 +23,7 @@ class DTMC_Utils:
         return t_m
 
     @staticmethod
-    def build_preferred_direction_transition_matrix(graph, S, north_preference=0.5):
+    def build_preferred_direction_transition_matrix(graph, S, north_preference=0.4):
         """
         Metodo per costruire la matrice di transizione con una direzione preferita (ad esempio, probabilità più alta di andare a nord).
         Usa esplicitamente np.matrix per rappresentare la matrice.
